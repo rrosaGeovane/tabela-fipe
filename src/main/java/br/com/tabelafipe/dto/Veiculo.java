@@ -1,4 +1,4 @@
-package br.com.tabelafipe;
+package br.com.tabelafipe.dto;
 
 public record Veiculo(int vehicleType,
                       String price,
