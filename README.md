@@ -417,17 +417,15 @@ You can also run `TabelafipeApplication` directly from your IDE and interact thr
 ## 🚀 Next Steps
 
 - [x] Make it interactive: let the user choose brand, model, and year in the terminal
-- [x] Handle invalid codes with `try/catch` and retry
 - [x] Split the project into layers (`dto`, `service`, `runner`)
 - [x] Support motorcycles and trucks
-- [ ] Numbered menu for the vehicle type, with input validation
-- [ ] Print lists one item per line (without brackets and commas)
-- [ ] Remove the repeated retry loops with a reusable method
-- [ ] Handle more errors: `400` (invalid input), `429` (rate limit), and connection failures
-- [ ] Move the base URL to `application.properties`
-- [ ] Send the access token through the `X-Subscription-Token` header
-- [ ] Display the price history
-- [ ] Add automated tests
+- [ ] Search a vehicle directly by its FIPE code
+- [ ] Display the price history of a vehicle
+- [ ] Let the user choose the reference month (prices from previous months)
+- [ ] Compare the prices of two vehicles side by side
+- [ ] Send the access token through the `X-Subscription-Token` header to raise the daily limit
+- [ ] Save search history in a database
+- [ ] Export results to a CSV file
 - [ ] Expose the data through my own REST endpoints (`@RestController`), so the project both **consumes and provides** an API
 
 ---
