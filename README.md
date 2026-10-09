@@ -313,14 +313,14 @@ public class FipeRunner implements CommandLineRunner {
         // ... vehicle type is read here ...
 
         List<Brand> brands = service.findBrands(vehicleType);
-        System.out.println(brands);
+        brands.forEach(System.out::print);           // one item per line, via toString()
 
         while (true) {
             System.out.println("Enter the brand code: ");
             brandCode = sc.nextLine().trim();
             try {
                 List<Model> models = service.findModels(vehicleType, brandCode);
-                System.out.println(models);
+                models.forEach(System.out::print);
                 break;                                   // success: next step
             } catch (HttpClientErrorException.NotFound e) {
                 System.out.println("Brand not found. TRY AGAIN!");
@@ -333,7 +333,9 @@ public class FipeRunner implements CommandLineRunner {
 }
 ```
 
-**Retry pattern:** `while (true)` + `try/catch` + `break`. The loop only ends when the request succeeds; a `404 Not Found` shows a message and asks again.
+**Retry pattern:** `while (true)` + `try/catch` + `break`. The loop only ends when the request succeeds; a `404 Not Found` shows a specific message for each step (*brand*, *model*, or *year* not found) and asks again.
+
+**Printing lists:** `forEach(System.out::print)` prints each item using the record's own `toString()`, one per line, without the brackets and commas that `println(list)` would add. `System.out::print` is a **method reference**, a shorter way to write `item -> System.out.print(item)`.
 
 ---
 
