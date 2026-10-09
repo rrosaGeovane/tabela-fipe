@@ -1,12 +1,13 @@
 package br.com.tabelafipe.service;
 
-import br.com.tabelafipe.dto.Ano;
-import br.com.tabelafipe.dto.Marca;
-import br.com.tabelafipe.dto.Modelo;
-import br.com.tabelafipe.dto.Veiculo;
+import br.com.tabelafipe.dto.Brand;
+import br.com.tabelafipe.dto.Model;
+import br.com.tabelafipe.dto.Vehicle;
+import br.com.tabelafipe.dto.Year;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+
 import java.util.List;
 
 
@@ -16,37 +17,37 @@ public class FipeService {
     private final RestClient client =
             RestClient.create("https://fipe.parallelum.com.br/api/v2");
 
-    //Buscar as Marcas
-    public List<Marca> buscarMarcas (){
+    // Find the brands
+    public List<Brand> findBrands(String vehicleType) {
         return client.get()
-                .uri("/cars/brands")
+                .uri("/{type}/brands", vehicleType)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<Marca>>() {});
+                .body(new ParameterizedTypeReference<List<Brand>>() {});
     }
 
-    //Buscar os modelos
-    public List<Modelo> buscarModelos (String codigoMarca) {
+    // Find the models
+    public List<Model> findModels(String vehicleType, String brandCode) {
         return client.get()
-                    .uri("/cars/brands/{marca}/models", codigoMarca)
-                    .retrieve()
-                    .body(new ParameterizedTypeReference<List<Modelo>>() {});
-    }
-
-    //Buscar os anos
-    public List<Ano> buscarAno(String codigoMarca, String codigoModelo){
-        return client.get()
-                .uri("/cars/brands/{marca}/models/{modelo}/years", codigoMarca, codigoModelo)
+                .uri("/{type}/brands/{brand}/models", vehicleType, brandCode)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<Ano>>() {});
-
+                .body(new ParameterizedTypeReference<List<Model>>() {});
     }
 
-    //buscarVeiculo
-    public Veiculo buscarVeiculo(String codigoMarca, String codigoModelo, String codigoAno) {
+    // Find the years
+    public List<Year> findYears(String vehicleType, String brandCode, String modelCode) {
         return client.get()
-                    .uri("/cars/brands/{marca}/models/{modelo}/years/{ano}/", codigoMarca, codigoModelo, codigoAno)
-                    .retrieve()
-                    .body(Veiculo.class);
+                .uri("/{type}/brands/{brand}/models/{model}/years",
+                        vehicleType, brandCode, modelCode)
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<Year>>() {});
+    }
 
+    // Find the vehicle
+    public Vehicle findVehicle(String vehicleType, String brandCode, String modelCode, String yearCode) {
+        return client.get()
+                .uri("/{type}/brands/{brand}/models/{model}/years/{year}",
+                        vehicleType, brandCode, modelCode, yearCode)
+                .retrieve()
+                .body(Vehicle.class);
     }
 }

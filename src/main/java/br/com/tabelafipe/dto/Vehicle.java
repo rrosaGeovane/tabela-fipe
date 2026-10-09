@@ -1,6 +1,6 @@
 package br.com.tabelafipe.dto;
 
-public record Veiculo(int vehicleType,
+public record Vehicle(int vehicleType,
                       String price,
                       String brand,
                       String model,

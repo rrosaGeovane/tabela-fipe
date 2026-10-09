@@ -1,15 +1,14 @@
 package br.com.tabelafipe.runner;
 
-import br.com.tabelafipe.dto.Ano;
-import br.com.tabelafipe.dto.Marca;
-import br.com.tabelafipe.dto.Modelo;
-import br.com.tabelafipe.dto.Veiculo;
+import br.com.tabelafipe.dto.Brand;
+import br.com.tabelafipe.dto.Model;
+import br.com.tabelafipe.dto.Vehicle;
+import br.com.tabelafipe.dto.Year;
 import br.com.tabelafipe.service.FipeService;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
+
 import java.util.List;
 import java.util.Scanner;
 
@@ -18,7 +17,7 @@ public class FipeRunner implements CommandLineRunner {
 
     private final FipeService service;
 
-    public FipeRunner(FipeService service) {   // o Spring entrega o service aqui
+    public FipeRunner(FipeService service) {   // Spring injects the service here
         this.service = service;
     }
 
@@ -27,59 +26,73 @@ public class FipeRunner implements CommandLineRunner {
 
         Scanner sc = new Scanner(System.in);
 
-        String codigoMarca;
-        String codigoModelo;
-        String codigoAno;
+        String vehicleType;
+        String brandCode;
+        String modelCode;
+        String yearCode;
 
-        //Mostra as Marcas
-        List<Marca> marcas = service.buscarMarcas();
-        System.out.println(marcas);
-
-
-        //Seleciona a marca e mostra os modelos
+        // Select the vehicle type
         while (true){
-            System.out.println("Digite o código da Marca: ");
-            codigoMarca = sc.nextLine().trim();
             try {
-                List<Modelo> modelos = service.buscarModelos(codigoMarca);
-
-                System.out.println(modelos);
+                System.out.println("Enter the vehicle type: ");
+                vehicleType = sc.nextLine().trim();
                 break;
-
-            } catch (HttpClientErrorException.NotFound e){
-                System.out.println("Não existe essa Marca. TENTE NOVAMENTE!");
+            }
+            catch (HttpClientErrorException.NotFound e){
+                System.out.println("Type not found. TRY AGAIN!");
             }
         }
 
-        //Seleciona o modelo e mostra os anos
+
+        // Show the brands
+        List<Brand> brands = service.findBrands(vehicleType);
+        System.out.println(brands);
+
+
+        // Select the brand and show the models
         while (true){
-            System.out.println("Digite o modelo: ");
-            codigoModelo = sc.nextLine().trim();
-
+            System.out.println("Enter the brand code:: ");
+            brandCode = sc.nextLine().trim();
             try {
-                List<Ano> anos = service.buscarAno(codigoMarca, codigoModelo);
+                List<Model> models = service.findModels(vehicleType, brandCode);
 
-                System.out.println(anos);
+                System.out.println(models);
                 break;
 
             } catch (HttpClientErrorException.NotFound e){
-                System.out.println("Não existe esse modelo. TENTE NOVAMENTE!");
+                System.out.println("Brand not found. TRY AGAIN!");
             }
         }
 
-        //seleciona o ano e mostra o veículo
+        // Select the model and show the years
         while (true){
-            System.out.println("Digite o ano: ");
-            codigoAno = sc.nextLine().trim();
+            System.out.println("Enter the model code: ");
+            modelCode = sc.nextLine().trim();
 
             try {
-                Veiculo veiculo = service.buscarVeiculo(codigoMarca, codigoModelo, codigoAno);
+                List<Year> years = service.findYears(vehicleType, brandCode, modelCode);
 
-                System.out.println(veiculo);
+                System.out.println(years);
                 break;
 
             } catch (HttpClientErrorException.NotFound e){
-                System.out.println("Não existe esse ano. TENTE NOVAMENTE!");
+                System.out.println("Brand not found. TRY AGAIN!");
+            }
+        }
+
+        // Select the year and show the vehicle
+        while (true){
+            System.out.println("Enter the year code: ");
+            yearCode = sc.nextLine().trim();
+
+            try {
+                Vehicle vehicle = service.findVehicle(vehicleType, brandCode, modelCode, yearCode);
+
+                System.out.println(vehicle);
+                break;
+
+            } catch (HttpClientErrorException.NotFound e){
+                System.out.println("Brand not found. TRY AGAIN!");
             }
         }
     }

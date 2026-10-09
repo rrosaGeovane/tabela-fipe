@@ -1,7 +1,7 @@
 package br.com.tabelafipe.dto;
 
-public record Ano(String code,
-                  String name) {
+public record Year(String code,
+                   String name) {
 
     @Override
     public String toString() {

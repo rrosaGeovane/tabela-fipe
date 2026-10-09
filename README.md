@@ -192,7 +192,7 @@ public record Veiculo(int vehicleType,
 
                 ===== RESULTADO =====
                 Veículo:      %s - %s
-                Ano:          %d
+                Year:          %d
                 Combustível:  %s
                 Código FIPE:  %s
                 Preço:        %s

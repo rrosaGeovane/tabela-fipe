@@ -1,7 +1,7 @@
 package br.com.tabelafipe.dto;
 
-public record Modelo(String code,
-                     String name) {
+public record Model(String code,
+                    String name) {
 
     @Override
     public String toString() {

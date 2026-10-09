@@ -1,6 +1,6 @@
 package br.com.tabelafipe.dto;
 
-public record Marca(String code,
+public record Brand(String code,
                     String name) {
 
     @Override
