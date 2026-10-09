@@ -1,6 +1,6 @@
 # 🚗 FIPE Table API Consumer
 
-An interactive Spring Boot command-line application that consumes the public **FIPE Table API** to look up the average market price of vehicles in Brazil. The user navigates step by step (brand → model → year) and the vehicle details are displayed directly in the terminal.
+An interactive Spring Boot command-line application that consumes the public **FIPE Table API** to look up the average market price of **cars, motorcycles, and trucks** in Brazil. The user navigates step by step (vehicle type → brand → model → year) and the vehicle details are displayed directly in the terminal.
 
 This project was built as a hands-on study of **how to consume an external REST API with Spring**, instead of building one. Most tutorials teach how to *create* APIs; this one focuses on the other side of the conversation: being the **client**.
 
@@ -8,7 +8,7 @@ This project was built as a hands-on study of **how to consume an external REST 
 
 ## 📌 About the FIPE Table
 
-The FIPE Table (*Tabela FIPE*) is the reference for average vehicle prices in the Brazilian market. It is widely used for buying and selling cars, insurance, and financing. The data is updated monthly.
+The FIPE Table (*Tabela FIPE*) is the reference for average vehicle prices in the Brazilian market. It is widely used for buying and selling vehicles, insurance, and financing. The data is updated monthly.
 
 This project uses the community-maintained API available at [fipe.api.br](https://fipe.api.br), which exposes the FIPE data as JSON over REST.
 
@@ -16,10 +16,11 @@ This project uses the community-maintained API available at [fipe.api.br](https:
 
 ## ✨ Features
 
-- Lists all car brands available in the FIPE Table
-- Interactive navigation through brand, model, and year using terminal input
-- Validates each choice: invalid codes show a friendly message and ask again, instead of crashing
-- Displays the full vehicle details: model, year, fuel, FIPE code, price, and reference month
+- Supports **cars, motorcycles, and trucks** with a single service, using the vehicle type as a URL parameter
+- Interactive navigation through vehicle type, brand, model, and year using terminal input
+- Validates brand, model, and year codes: invalid codes show a message and ask again, instead of crashing
+- Displays the full vehicle details: type, price, brand, model, year, fuel, FIPE code, and reference month
+- Custom `toString()` in every record for readable terminal output
 - Layered architecture separating API access (service) from user interaction (runner)
 
 ---
@@ -28,9 +29,9 @@ This project uses the community-maintained API available at [fipe.api.br](https:
 
 | Technology | Purpose |
 |---|---|
-| **Java 17+** | Language |
-| **Spring Boot 3.2+** | Application framework |
-| **Spring Web** | Provides `RestClient` (HTTP calls) and Jackson (JSON mapping) |
+| **Java 17** | Language |
+| **Spring Boot 4.1** | Application framework |
+| **Spring Web MVC** (`spring-boot-starter-webmvc`) | Provides `RestClient` (HTTP calls) and Jackson (JSON mapping) |
 | **RestClient** | Sends HTTP requests to the external API |
 | **Jackson** | Converts JSON responses into Java objects |
 | **Java Records** | Immutable data models (DTOs) |
@@ -42,56 +43,69 @@ This project uses the community-maintained API available at [fipe.api.br](https:
 ## 🖥️ Example Session
 
 ```
-1 - Acura
-2 - Agrale
-3 - Alfa Romeo
+Enter the vehicle type:
+cars
+
+Acura: 1
+Agrale: 2
+Alfa Romeo: 3
 ...
 
-Enter the brand code: 999
+Enter the brand code:
+999
 Brand not found. TRY AGAIN!
 
-Enter the brand code: 4
-21 - Hummer Hard-Top 6.5 4x4 Diesel TB
-22 - Hummer Open-Top 6.5 4x4 Diesel TB
-23 - Hummer Wagon 6.5 4x4 Diesel TB
+Enter the brand code:
+4
+Hummer Hard-Top 6.5 4x4 Diesel TB: 21
+Hummer Open-Top 6.5 4x4 Diesel TB: 22
+Hummer Wagon 6.5 4x4 Diesel TB: 23
 
-Enter the model code: 21
+Enter the model code:
+21
 ...  (list of available years)
 
-Enter the year code: ...
+Enter the year code:
+...
 
-===== RESULT =====
-Vehicle:      <brand> - <model>
-Year:         <model year>
-Fuel:         <fuel>
-FIPE code:    <FIPE code>
-Price:        R$ <price>
-Reference:    <reference month>
+Vehicle Type: <type code>
+Price: R$ <price>
+Brand: <brand>
+Model: <model>
+Model Year: <year>
+Fuel: <fuel>
+Code Fipe: <FIPE code>
+Reference Month: <month>
+Fuel Acronym: <acronym>
 ```
 
-> The application itself prints its messages in Portuguese.
+> Accepted vehicle types: `cars`, `motorcycles`, `trucks`.
 
 ---
 
 ## ⚙️ How It Works
 
-The FIPE API works like a **funnel**: each request narrows down the search, and each answer provides the codes needed for the next request.
+The FIPE API works like a **funnel**: each request narrows down the search, and each answer provides the codes needed for the next request. The vehicle type chosen at the start is carried through every step.
 
 ```
           ┌──────────────────────────────┐
-          │  1. List brands              │  GET /cars/brands
+          │  0. Choose vehicle type      │  cars | motorcycles | trucks
+          └──────────────┬───────────────┘
+                         │
+          ┌──────────────▼───────────────┐
+          │  1. List brands              │  GET /{type}/brands
           └──────────────┬───────────────┘
                          │ user types a brand code
           ┌──────────────▼───────────────┐
-          │  2. List models              │  GET /cars/brands/{brand}/models
+          │  2. List models              │  GET /{type}/brands/{brand}/models
           └──────────────┬───────────────┘
                          │ user types a model code
           ┌──────────────▼───────────────┐
-          │  3. List years               │  GET /cars/brands/{brand}/models/{model}/years
+          │  3. List years               │  GET /{type}/brands/{brand}/models/{model}/years
           └──────────────┬───────────────┘
                          │ user types a year code
           ┌──────────────▼───────────────┐
-          │  4. Vehicle details + price  │  GET /cars/brands/{brand}/models/{model}/years/{year}
+          │  4. Vehicle details + price  │  GET /{type}/brands/{brand}/models/{model}/years/{year}
           └──────────────────────────────┘
 ```
 
@@ -112,11 +126,12 @@ To understand each component, I used a store analogy:
 |---|---|
 | Supplier with the stock | FIPE API and its database |
 | Shipping company | `FipeService` + `RestClient` |
+| Type of merchandise written on the order | `vehicleType` (`cars`, `motorcycles`, `trucks`) |
 | Employee who unpacks the boxes | Jackson |
-| Shelf format | Records (`Marca`, `Modelo`, `Ano`, `Veiculo`) |
+| Shelf format | Records (`Brand`, `Model`, `Year`, `Vehicle`) |
 | Store clerk who talks to the customer | `FipeRunner` |
 | Opening routine of the store | `CommandLineRunner` |
-| Product label | `toString()` in `Veiculo` |
+| Product label | `toString()` in each record |
 | Store door closed to the public | No embedded web server (`web-application-type=none`) |
 | Rules for writing the orders | REST (HTTP methods + URLs) |
 
@@ -126,16 +141,16 @@ To understand each component, I used a store analogy:
 
 ```
 src/main/java/br/com/tabelafipe/
-├── TabelaFipeApplication.java   # Entry point (@SpringBootApplication)
+├── TabelafipeApplication.java   # Entry point (@SpringBootApplication)
 ├── runner/
 │   └── FipeRunner.java          # Talks to the user and coordinates the flow
 ├── service/
 │   └── FipeService.java         # Makes the HTTP requests to the FIPE API
 └── dto/
-    ├── Marca.java               # Brand  (code, name)
-    ├── Modelo.java              # Model  (code, name)
-    ├── Ano.java                 # Year   (code, name)
-    └── Veiculo.java             # Vehicle details + custom toString()
+    ├── Brand.java               # (code, name)
+    ├── Model.java               # (code, name)
+    ├── Year.java                # (code, name)
+    └── Vehicle.java             # Vehicle details
 
 src/main/resources/
 └── application.properties       # Disables the web server
@@ -147,9 +162,9 @@ Each layer has a single responsibility:
 |---|---|---|
 | `runner` | User interaction (input, output, retry loops) | The service, never the URLs |
 | `service` | Communication with the external API | URLs and HTTP, never the terminal |
-| `dto` | Data shape | Only its own fields |
+| `dto` | Data shape and how it is displayed | Only its own fields |
 
-> `TabelaFipeApplication` stays in the root package so Spring can find the `@Component` and `@Service` classes in the subpackages.
+> `TabelafipeApplication` stays in the root package so Spring can find the `@Component` and `@Service` classes in the subpackages.
 
 ---
 
@@ -157,7 +172,7 @@ Each layer has a single responsibility:
 
 ### 1. Running as a terminal application
 
-Spring Web includes an embedded Tomcat server. Since this project only makes requests (it does not receive them), the server is disabled:
+Spring Web MVC includes an embedded Tomcat server. Since this project only makes requests (it does not receive them), the server is disabled:
 
 ```properties
 spring.main.web-application-type=none
@@ -165,18 +180,25 @@ spring.main.web-application-type=none
 
 ### 2. Data models (records)
 
-Brands, models, and years share the same JSON format, so each one is a simple record:
+Brands, models, and years share the same JSON format (`code` and `name`). Each one is a record with a custom `toString()`:
 
 ```java
-public record Marca(String code, String name) {}
-public record Modelo(String code, String name) {}
-public record Ano(String code, String name) {}
+public record Brand(String code,
+                    String name) {
+
+    @Override
+    public String toString() {
+        return "%s: %s\n".formatted(name, code);
+    }
+}
 ```
+
+`Model` and `Year` follow the same pattern.
 
 The vehicle details are a single object. The field names match the JSON keys so Jackson can map them automatically:
 
 ```java
-public record Veiculo(int vehicleType,
+public record Vehicle(int vehicleType,
                       String price,
                       String brand,
                       String model,
@@ -189,24 +211,30 @@ public record Veiculo(int vehicleType,
     @Override
     public String toString() {
         return """
-
-                ===== RESULTADO =====
-                Veículo:      %s - %s
-                Year:          %d
-                Combustível:  %s
-                Código FIPE:  %s
-                Preço:        %s
-                Referência:   %s
-                """.formatted(brand, model, modelYear, fuel, codeFipe, price, referenceMonth);
+                Vehicle Type: %d
+                Price: %s
+                Brand: %s
+                Model: %s
+                Model Year: %d
+                Fuel: %s
+                Code Fipe: %s
+                Reference Month: %s
+                Fuel Acronym: %s
+                """.formatted(vehicleType,
+                price, brand, model, modelYear,
+                fuel, codeFipe, referenceMonth, fuelAcronym);
     }
 }
 ```
 
 > `price` is a `String`, not a `double`, because the API returns it as formatted text (`"R$ 10.000,00"`).
 > Fields present in the JSON but missing from the record (such as `priceHistory`) are simply ignored.
-> The custom `toString()` uses a **text block** (`"""`) and `formatted()` to print a clean result with a single `println(veiculo)`.
+> `toString()` uses a **text block** (`"""`) and `formatted()`, so a single `println(vehicle)` prints a clean result.
+> The same records work for cars, motorcycles, and trucks, because the API returns the same JSON format for all of them.
 
-### 3. The service: talking to the API
+### 3. The service: one class for every vehicle type
+
+Instead of duplicating the service for each vehicle type, the type is just **one more placeholder** in the URL:
 
 ```java
 @Service
@@ -215,30 +243,35 @@ public class FipeService {
     private final RestClient client =
             RestClient.create("https://fipe.parallelum.com.br/api/v2");
 
-    public List<Marca> buscarMarcas() {
+    public List<Brand> findBrands(String vehicleType) {
         return client.get()
-                .uri("/cars/brands")
+                .uri("/{type}/brands", vehicleType)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<Marca>>() {});
+                .body(new ParameterizedTypeReference<List<Brand>>() {});
     }
 
-    public List<Ano> buscarAnos(String codigoMarca, String codigoModelo) {
+    public List<Model> findModels(String vehicleType, String brandCode) {
         return client.get()
-                .uri("/cars/brands/{marca}/models/{modelo}/years",
-                        codigoMarca, codigoModelo)
+                .uri("/{type}/brands/{brand}/models", vehicleType, brandCode)
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<Ano>>() {});
+                .body(new ParameterizedTypeReference<List<Model>>() {});
     }
 
-    public Veiculo buscarVeiculo(String codigoMarca, String codigoModelo, String codigoAno) {
+    public List<Year> findYears(String vehicleType, String brandCode, String modelCode) {
         return client.get()
-                .uri("/cars/brands/{marca}/models/{modelo}/years/{ano}",
-                        codigoMarca, codigoModelo, codigoAno)
+                .uri("/{type}/brands/{brand}/models/{model}/years",
+                        vehicleType, brandCode, modelCode)
                 .retrieve()
-                .body(Veiculo.class);
+                .body(new ParameterizedTypeReference<List<Year>>() {});
     }
 
-    // buscarModelos(...) follows the same pattern
+    public Vehicle findVehicle(String vehicleType, String brandCode, String modelCode, String yearCode) {
+        return client.get()
+                .uri("/{type}/brands/{brand}/models/{model}/years/{year}",
+                        vehicleType, brandCode, modelCode, yearCode)
+                .retrieve()
+                .body(Vehicle.class);
+    }
 }
 ```
 
@@ -248,10 +281,10 @@ public class FipeService {
 | `.get()` | Defines the HTTP method (fetch data) |
 | `.uri(path, values...)` | Appends the path to the base URL and fills the `{placeholders}` **in order** |
 | `.retrieve()` | Sends the request, receives the response, and throws an exception on error status |
-| `.body(Veiculo.class)` | Single JSON object `{ }` → one Java object |
+| `.body(Vehicle.class)` | Single JSON object `{ }` → one Java object |
 | `.body(new ParameterizedTypeReference<List<...>>() {})` | JSON array `[ ]` → `List`, working around Java's **type erasure** |
 
-Each method receives exactly the codes its URL needs, and the service never touches the terminal.
+Each method receives exactly the values its URL needs, and the service never touches the terminal. Supporting a new vehicle type requires **no new code** in the service.
 
 ### 4. The runner: talking to the user
 
@@ -262,36 +295,40 @@ The runner receives the service through **constructor injection** and implements
 public class FipeRunner implements CommandLineRunner {
 
     private final FipeService service;
-    private final Scanner sc = new Scanner(System.in);
 
-    public FipeRunner(FipeService service) {
+    public FipeRunner(FipeService service) {   // Spring injects the service here
         this.service = service;
     }
 
     @Override
-    public void run(String... args) {
-        String codigoMarca;   // declared outside the loops
-        String codigoModelo;  // so they survive until
-        String codigoAno;     // the last step
+    public void run(String... args) throws Exception {
 
-        service.buscarMarcas()
-               .forEach(m -> System.out.println(m.code() + " - " + m.name()));
+        Scanner sc = new Scanner(System.in);
+
+        String vehicleType;   // declared outside the loops
+        String brandCode;     // so they survive until
+        String modelCode;     // the last step
+        String yearCode;
+
+        // ... vehicle type is read here ...
+
+        List<Brand> brands = service.findBrands(vehicleType);
+        System.out.println(brands);
 
         while (true) {
-            System.out.print("\nDigite o código da marca: ");
-            codigoMarca = sc.nextLine().trim();
-
+            System.out.println("Enter the brand code: ");
+            brandCode = sc.nextLine().trim();
             try {
-                service.buscarModelos(codigoMarca)
-                       .forEach(m -> System.out.println(m.code() + " - " + m.name()));
+                List<Model> models = service.findModels(vehicleType, brandCode);
+                System.out.println(models);
                 break;                                   // success: next step
             } catch (HttpClientErrorException.NotFound e) {
-                System.out.println("Não existe essa marca. TENTE NOVAMENTE!");
+                System.out.println("Brand not found. TRY AGAIN!");
             }
         }
 
         // The same pattern repeats for model → years and year → vehicle,
-        // ending with: System.out.println(veiculo);
+        // ending with: System.out.println(vehicle);
     }
 }
 ```
@@ -319,11 +356,11 @@ Base URL: `https://fipe.parallelum.com.br/api/v2`
 
 ## ▶️ How to Run
 
-**Requirements:** Java 17+ and Maven (or use the included Maven Wrapper).
+**Requirements:** Java 17+ (Maven is optional, the Maven Wrapper is included).
 
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/tabela-fipe.git
+git clone https://github.com/rrosaGeovane/tabela-fipe.git
 cd tabela-fipe
 
 # Run
@@ -336,7 +373,7 @@ On Windows:
 mvnw.cmd spring-boot:run
 ```
 
-You can also run `TabelaFipeApplication` directly from your IDE and interact through its console.
+You can also run `TabelafipeApplication` directly from your IDE and interact through its console.
 
 ---
 
@@ -349,11 +386,15 @@ You can also run `TabelaFipeApplication` directly from your IDE and interact thr
 - **HTTP status codes:** `200` success, `404` not found, `429` too many requests, `500` server error.
 
 **Spring**
-- **Spring Boot starters:** what `spring-boot-starter-web` brings (Spring MVC, Tomcat, Jackson, RestClient) and which parts this project uses.
+- **Spring Boot starters:** what the web starter brings (Spring MVC, Tomcat, Jackson, RestClient) and which parts this project uses.
 - **`CommandLineRunner`:** runs code once at startup, similar to a `main` method, with Spring managing object creation.
 - **Dependency injection:** the runner receives the service through its constructor; Spring creates and connects both.
 - **Layered architecture:** separating API access (`@Service`) from user interaction, and keeping the main class in the root package for component scanning.
 - **`RestClient`:** building requests with method chaining (`get → uri → retrieve → body`) and URI placeholders filled in order.
+
+**Design**
+- **Parameterizing instead of duplicating:** turning the vehicle type into a URL placeholder so one service handles cars, motorcycles, and trucks, instead of one copied class per type.
+- **Reusing DTOs:** records describe the *shape* of the data, so the same records serve every vehicle type.
 
 **Java**
 - **Static factory methods:** why `RestClient.create()` is used instead of `new` (`RestClient` is an interface).
@@ -361,7 +402,7 @@ You can also run `TabelaFipeApplication` directly from your IDE and interact thr
 - **Single object vs. list:** `{ }` maps to `.body(MyClass.class)`, while `[ ]` requires `ParameterizedTypeReference` because of **type erasure**.
 - **Exception handling:** `throws` passes the error up; `try/catch` handles it. Nested classes appear with `$` in stack traces but are written with `.` in code.
 - **Variable scope:** variables declared inside a loop do not exist outside it.
-- **Overriding `toString()`** in a record, using text blocks and `formatted()`.
+- **Overriding `toString()`** in records, using text blocks and `formatted()`.
 
 **Debugging**
 - Adding "flashlights" (`println` checkpoints) to find where the flow breaks.
@@ -369,6 +410,7 @@ You can also run `TabelaFipeApplication` directly from your IDE and interact thr
 
 **Tools**
 - Git and GitHub: initializing a repository, committing, and pushing from the terminal and from IntelliJ.
+- IntelliJ **Refactor → Rename** to rename classes and methods across the whole project.
 
 ---
 
@@ -377,9 +419,11 @@ You can also run `TabelaFipeApplication` directly from your IDE and interact thr
 - [x] Make it interactive: let the user choose brand, model, and year in the terminal
 - [x] Handle invalid codes with `try/catch` and retry
 - [x] Split the project into layers (`dto`, `service`, `runner`)
+- [x] Support motorcycles and trucks
+- [ ] Numbered menu for the vehicle type, with input validation
+- [ ] Print lists one item per line (without brackets and commas)
 - [ ] Remove the repeated retry loops with a reusable method
 - [ ] Handle more errors: `400` (invalid input), `429` (rate limit), and connection failures
-- [ ] Support motorcycles and trucks
 - [ ] Move the base URL to `application.properties`
 - [ ] Send the access token through the `X-Subscription-Token` header
 - [ ] Display the price history
